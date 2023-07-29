@@ -8,7 +8,8 @@ import androidx.recyclerview.widget.RecyclerView
 import fastcampus.projects.githubactivity.databinding.ItemRepoBinding
 import fastcampus.projects.githubactivity.model.Repo
 
-class RepoAdapter : ListAdapter<Repo, RepoAdapter.ViewHolder>(diffUtil) {
+class RepoAdapter(private val onClick: (Repo) -> Unit) :
+    ListAdapter<Repo, RepoAdapter.ViewHolder>(diffUtil) {
 
     inner class ViewHolder(private val viewBinding: ItemRepoBinding) :
         RecyclerView.ViewHolder(viewBinding.root) {
@@ -19,6 +20,9 @@ class RepoAdapter : ListAdapter<Repo, RepoAdapter.ViewHolder>(diffUtil) {
             viewBinding.starCountTextView.text = item.starCount.toString()
             viewBinding.forkCountTextView.text = item.forkCount.toString()
 
+            viewBinding.root.setOnClickListener {
+                onClick(item)
+            }
         }
 
     }

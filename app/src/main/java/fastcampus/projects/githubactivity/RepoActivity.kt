@@ -1,9 +1,12 @@
 package fastcampus.projects.githubactivity
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import fastcampus.projects.githubactivity.adapter.RepoAdapter
 import fastcampus.projects.githubactivity.databinding.ActivityRepoBinding
 import fastcampus.projects.githubactivity.model.Repo
@@ -17,9 +20,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 class RepoActivity : AppCompatActivity() {
     private lateinit var binding: ActivityRepoBinding
     private lateinit var repoAdapter: RepoAdapter
-    private val retrofit = Retrofit.Builder()
-        .baseUrl("https://api.github.com/").addConverterFactory(GsonConverterFactory.create())
-        .build()
+    private var page = 0
+    private var hasMore = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,27 +30,50 @@ class RepoActivity : AppCompatActivity() {
         val username = intent.getStringExtra("username") ?: return
 
         binding.usernameTextView.text = username
-        repoAdapter = RepoAdapter()
 
+        repoAdapter = RepoAdapter {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.htmlUrl))
+            startActivity(intent)
+        }
+
+        val linearLayoutManager = LinearLayoutManager(this@RepoActivity)
         binding.repoRecyclerView.apply {
-            layoutManager = LinearLayoutManager(this@RepoActivity)
+            layoutManager = linearLayoutManager
             adapter = repoAdapter
         }
 
-        listRepo(username)
+        binding.repoRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+//            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+//                super.onScrollStateChanged(recyclerView, newState)
+//            }
+
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+
+                val totalCount = linearLayoutManager.itemCount
+                //리사이클러뷰 마지막 포지션의 몇번째인지 확인
+                val lastVisiblePosition =
+                    linearLayoutManager.findLastCompletelyVisibleItemPosition()
+                if (lastVisiblePosition >= (totalCount - 1) && hasMore) {
+                    page += 1
+                    listRepo(username, page)
+                }
+            }
+        })
+        listRepo(username, 0)
     }
 
-    private fun listRepo(username: String) {
-        val githubService = retrofit.create(GithubService::class.java)
+    private fun listRepo(username: String, page: Int) {
+        val githubService = APIClient.retrofit.create(GithubService::class.java)
 
-        githubService.listRepos(username).enqueue(object : Callback<ArrayList<Repo>> {
+        githubService.listRepos(username, page).enqueue(object : Callback<ArrayList<Repo>> {
             override fun onResponse(
-                call: Call<ArrayList<Repo>>,
-                response: Response<ArrayList<Repo>>
+                call: Call<ArrayList<Repo>>, response: Response<ArrayList<Repo>>
             ) {
                 if (response.isSuccessful) {
+                    hasMore = response.body()?.count() == 30
                     //Log.e("MainActivity", "ListRepo : ${response.body().toString()}")
-                    repoAdapter.submitList(response.body())
+                    repoAdapter.submitList(repoAdapter.currentList + response.body().orEmpty())
                     //리스트가 들어와야 함
                 }
             }
