@@ -39,22 +39,6 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-
-//        githubService.listRepos("woojin9949").enqueue(object : Callback<ArrayList<Repo>> {
-//            override fun onResponse(
-//                call: Call<ArrayList<Repo>>,
-//                response: Response<ArrayList<Repo>>
-//            ) {
-//                if (response.isSuccessful) {
-//                    Log.e("MainActivity", "ListRepo : ${response.body().toString()}")
-//                }
-//            }
-//
-//            override fun onFailure(call: Call<ArrayList<Repo>>, t: Throwable) {
-//
-//            }
-//        })
-
         userAdapter = UserAdapter() {
             val intent = Intent(this@MainActivity, RepoActivity::class.java)
             intent.putExtra("username", it.username)
@@ -69,6 +53,7 @@ class MainActivity : AppCompatActivity() {
         val runnable = Runnable {
             searchUser()
         }
+
         // debouncing
         binding.searchEditText.addTextChangedListener {
             searchFor = it.toString()
